@@ -1,5 +1,3 @@
-<script setup lang="ts"></script>
-
 <template>
   <div class="absolute inset-0 overflow-hidden bg-black bg-opacity-50">
     <div class="flex items-start justify-center min-h-screen mt-24 text-center">
