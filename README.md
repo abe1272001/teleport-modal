@@ -2,6 +2,8 @@
 
 在這篇文章中，我會使用 Vue Teleport Component 以及一些實用的 Vue 技巧來製作一個簡單且可以復用的 Modal。
 
+[原文](https://dev.to/alexandergekov/creating-better-modals-using-vue-teleport-3cd4)
+
 Code Repository: [Github](https://github.com/abe1272001/teleport-modal)
 
 ## 前言
@@ -151,7 +153,7 @@ npx tailwindcss init -p
 
 沒錯，就是 `Teleport` !
 
-## 新增 Teleport
+## 新增 Teleport (Vue Teleport component)
 
 在 `index.html` 新增一個 `id="modal"` 的元素，我們的 Modal 將會被渲染在 Vue App 之外。
 
@@ -281,6 +283,99 @@ export default function useModal() {
       Open Confirm Modal
     </button>
     <teleport to="#modal">
+      <ModalConfirm v-if="modal.show.value" @close="modal.closeModal" />
+    </teleport>
+    <div
+      class="absolute top-20 bg-red-600 w-full h-10 flex justify-center items-center text-white"
+    >
+      This will make ui ugly
+    </div>
+  </div>
+</template>
+```
+
+現在我們將開關 Modal 的邏輯及 data 更換成使用 composable 取代，使用 `openConfirmModal` 方法來指派 `ModalConfirm` 組件給 Modal，為了達到此目的我們使用了 `markRaw` helper。 [MarkRaw 詳細介紹](https://vuejs.org/api/reactivity-advanced.html#markraw)
+
+如果我們現在測試它，它應該可以正常運作，只是我們將邏輯都轉移至 composable 之中，而且是可以複用的。
+
+## 新增動態組件 (Vue Dynamic component)
+
+既然我們已經有了 `ModalConfirm` 組件，如果我們想要動態的顯示不同的 Modal 基於其他使用情境，該怎麼做呢？ 因為在實際專案中應該不會只有一種 Modal。還記得我們有加入 `component` 在 `useModal` composable 嗎？我們可以將它與 Vue 的動態組件功能一起來顯示不同的 Modal。
+
+我們來建立第二個 Modal，他跟第一個 Modal 很相似，僅用來模擬不同 Modal 的情境，來建立 `ModalOverview.vue` 吧：
+
+```html
+<template>
+  <div class="absolute overflow-hidden inset-0 bg-black bg-opacity-50">
+    <div class="flex items-start justify-center min-h-screen mt-24 text-center">
+      <div
+        class="bg-white text-black rounded-lg text-center shadow-xl p-6 w-64"
+        role="dialog"
+        aria-modal="true"
+      >
+        <h2 class="text-lg font-bold">Overview of items:</h2>
+        <ul>
+          <li>Item 1</li>
+          <li>Item 2</li>
+          <li>Item 3</li>
+          <li>Item 4</li>
+          <li>Item 5</li>
+        </ul>
+        <div class="flex justify-center py-4">
+          <button
+            class="border border-black bg-white text-black rounded-md w-16 py-2"
+            @click="$emit('close')"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+```
+
+現在我們將第二個 Modal 加進 `App.vue`：
+
+```html
+<script setup lang="ts">
+  import { markRaw } from 'vue'
+  // import the composable
+  import useModal from '@/composables/useModal'
+  import ModalConfirm from '@/components/ModalConfirm.vue'
+  import ModalOverview from '@/components/ModalOverview.vue'
+
+  const modal = useModal()
+
+  // set the modal component to the ModalConfirm component and open it
+  const openConfirmModal = () => {
+    modal.component.value = markRaw(ModalConfirm)
+    modal.showModal()
+  }
+
+  const openOverviewModal = () => {
+    modal.component.value = markRaw(ModalOverview)
+    modal.showModal()
+  }
+</script>
+
+<template>
+  <div class="flex justify-center items-center min-h-screen">
+    <div class="flex gap-3">
+      <button
+        class="border p-2 rounded-md hover:bg-blue-400 hover:text-white"
+        @click="openConfirmModal"
+      >
+        Open Confirm Modal
+      </button>
+      <button
+        class="border p-2 rounded-md hover:bg-blue-400 hover:text-white"
+        @click="openOverviewModal"
+      >
+        Open Overview Modal
+      </button>
+    </div>
+    <teleport to="#modal">
       <component
         :is="modal.component.value"
         v-if="modal.show.value"
@@ -295,3 +390,98 @@ export default function useModal() {
   </div>
 </template>
 ```
+
+現在你可以看到，我們引入 `ModalOverview` 和新增了第二個按鈕，並將其指派給了 composable 和開啟 Modal。更重要的是我們使用了 `<component :is="">` 動態組件來切換 Modal， `is` prop 可以接受組件名稱或是組件本身。我們的 case 則是使用來自 `useModal` composable 內的 `component`，第二個 Modal 畫面如下：
+
+![](public/images/second-modal-view.png)
+
+## 新增 Transition (Vue Transition component)
+
+最後，我們來新增 Transition，讓 Modal 在畫面上呈現漂亮的動畫效果，我們可以使用 Vue 的另一個原生組件 -- `<Transition>`
+
+在 `App.vue` :
+
+```html
+<script setup lang="ts">
+  import { markRaw } from 'vue'
+  // import the composable
+  import useModal from '@/composables/useModal'
+  import ModalConfirm from '@/components/ModalConfirm.vue'
+  import ModalOverview from '@/components/ModalOverview.vue'
+
+  const modal = useModal()
+
+  // set the modal component to the ModalConfirm component and open it
+  const openConfirmModal = () => {
+    modal.component.value = markRaw(ModalConfirm)
+    modal.showModal()
+  }
+
+  const openOverviewModal = () => {
+    modal.component.value = markRaw(ModalOverview)
+    modal.showModal()
+  }
+</script>
+
+<template>
+  <div class="flex justify-center items-center min-h-screen">
+    <div class="flex gap-3">
+      <button
+        class="border p-2 rounded-md hover:bg-blue-400 hover:text-white"
+        @click="openConfirmModal"
+      >
+        Open Confirm Modal
+      </button>
+      <button
+        class="border p-2 rounded-md hover:bg-blue-400 hover:text-white"
+        @click="openOverviewModal"
+      >
+        Open Overview Modal
+      </button>
+    </div>
+    <teleport to="#modal">
+      <Transition>
+        <component
+          :is="modal.component.value"
+          v-if="modal.show.value"
+          @close="modal.closeModal"
+        />
+      </Transition>
+    </teleport>
+    <div
+      class="absolute top-20 bg-red-600 w-full h-10 flex justify-center items-center text-white"
+    >
+      This will make ui ugly
+    </div>
+  </div>
+</template>
+
+<style scoped>
+  .v-enter-active,
+  .v-leave-active {
+    transition: opacity 0.5s ease;
+  }
+
+  .v-enter-from,
+  .v-leave-to {
+    opacity: 0;
+  }
+</style>
+```
+
+我們需要新增額外的 CSS classes 在 `style` 中，以下是 vue 的 Transition 樣式表：
+
+![](public/images/vue-transition.png)
+
+這樣我們的 Modal 就大功告成啦！！
+
+## 結論
+
+經過這教學，我們學會處理 Vue Teleport component，以及 Vue Transition component，也使用了最佳實踐並提取了額外的邏輯到 Composable。最後我們也學到了 Vue Dynamic component，讓我們能夠渲染不同型態的 Modal。
+
+## 有用的資源
+
+- [Vue Teleport](https://vuejs.org/guide/built-ins/teleport.html)
+- [Vue Transition](https://vuejs.org/guide/built-ins/transition.html#css-based-transitions)
+- [Vue markraw](https://vuejs.org/api/reactivity-advanced.html#markraw)
+- [Vue dynamic components](https://vuejs.org/guide/essentials/component-basics.html#dynamic-components)
