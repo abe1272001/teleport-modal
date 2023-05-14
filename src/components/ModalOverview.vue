@@ -1,5 +1,5 @@
 <template>
-  <div class="absolute inset-0 bg-black bg-opacity-50">
+  <div class="absolute inset-0 overflow-hidden bg-black bg-opacity-50">
     <div class="flex items-start justify-center min-h-screen mt-24 text-center">
       <div
         class="bg-white text-black rounded-lg text-center shadow-xl p-6 w-64"

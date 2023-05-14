@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { markRaw, ref } from 'vue'
+import { markRaw } from 'vue'
 // import the composable
 import useModal from '@/composables/useModal'
 import ModalConfirm from '@/components/ModalConfirm.vue'
@@ -36,11 +36,13 @@ const openOverviewModal = () => {
       </button>
     </div>
     <teleport to="#modal">
-      <component
-        :is="modal.component.value"
-        v-if="modal.show.value"
-        @close="modal.closeModal"
-      />
+      <Transition>
+        <component
+          :is="modal.component.value"
+          v-if="modal.show.value"
+          @close="modal.closeModal"
+        />
+      </Transition>
     </teleport>
     <div
       class="absolute top-20 bg-red-600 w-full h-10 flex justify-center items-center text-white"
@@ -49,3 +51,15 @@ const openOverviewModal = () => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.v-enter-active,
+.v-leave-active {
+  transition: opacity 0.5s ease;
+}
+
+.v-enter-from,
+.v-leave-to {
+  opacity: 0;
+}
+</style>
