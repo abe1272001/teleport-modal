@@ -1,5 +1,7 @@
 # 使用 Vue3 Teleport 製作對話框（Modal）
 
+![](public/images/teleport-preview.png)
+
 在這篇文章中，我會使用 Vue Teleport Component 以及一些實用的 Vue 技巧來製作一個簡單且可以復用的 Modal。
 
 [原文](https://dev.to/alexandergekov/creating-better-modals-using-vue-teleport-3cd4)
